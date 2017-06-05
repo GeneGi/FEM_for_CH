@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <omp.h>
 #include "generate_info_matrix.h"
 
 using namespace std;
@@ -24,10 +25,10 @@ vector <vector<double>> generate_P_triangle(vector<double> omega, vector<double>
         hx = 0;
         hy = 0;
     }
-
     int Nx = (int) ((right - left) / hx);
     int Ny = (int) ((top - bottom) / hy);
     int Nb = (Nx + 1) * (Ny + 1);
+
     vector <vector<double>> P(Nb, vector<double>(2));
 
     for (int i = 0; i < Nx + 1; i++) {
@@ -50,7 +51,6 @@ vector <vector<int>> generate_T_triangle(vector<double> omega, vector<double> h,
 
     int Nx = (int) ((right - left) / hx);
     int Ny = (int) ((top - bottom) / hy);
-    int Nb = (Nx + 1) * (Ny + 1);
     int N = 2 * Nx * Ny;
 
     if (basis_type == "linear") {
@@ -58,7 +58,6 @@ vector <vector<int>> generate_T_triangle(vector<double> omega, vector<double> h,
 
         vector<vector<int>> T((unsigned long) N, vector<int>(Nlb));
         vector<vector<int>> temp((unsigned long) (Nx + 1), vector<int>((unsigned long) (Ny + 1)));
-
         for (int i = 0; i < Nx+1; i++) {
             for (int j = 0; j < Ny+1; j++) {
                 temp[i][j] = i * (Ny+1) + j;
@@ -88,7 +87,6 @@ vector <vector<int>> generate_T_triangle(vector<double> omega, vector<double> h,
 
         vector<vector<int>> T((unsigned long) N, vector<int>(Nlb));
         vector<vector<int>> temp((unsigned long) (2*Nx + 1), vector<int>((unsigned long) (2*Ny + 1)));
-
         for (int i = 0; i < 2*Nx+1; i++) {
             for (int j = 0; j < 2*Ny+1; j++) {
                 temp[i][j] = i * (2*Ny+1) + j;
@@ -103,7 +101,6 @@ vector <vector<int>> generate_T_triangle(vector<double> omega, vector<double> h,
                 row = i % Ny;
                 column = i / Ny;
             }
-
             T[2*i][0] = temp[2*column][2*row];
             T[2*i][1] = temp[2*column + 2][2*row];
             T[2*i][2] = temp[2*column][2*row + 2];
@@ -119,10 +116,6 @@ vector <vector<int>> generate_T_triangle(vector<double> omega, vector<double> h,
             T[2*i+1][5] = temp[2*column + 1][2*row + 2];
         }
         return T;
-    } else {
-        // unknown basis type, error
-        vector<vector<int>> T;
-        return T;
     }
 }
 
@@ -136,8 +129,6 @@ vector<vector<int>> generate_boundary_nodes(vector<double> omega, vector<double>
 
     int Nx = (int) ((right - left) / hx);
     int Ny = (int) ((top - bottom) / hy);
-    int Nb = (Nx + 1) * (Ny + 1);
-    int N = 2 * Nx * Ny;
 
     if (basis_type == "quadratic") {
         Nx = 2 * Nx;

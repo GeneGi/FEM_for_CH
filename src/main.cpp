@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <ctime>
+#include <chrono>
 
 #include "../lib/Eigen/Sparse"
 
@@ -13,20 +14,24 @@
 #include "treat_boundary.h"
 #include "boundary_function.h"
 #include "write_file.h"
+#include "read_mesh_from_file.h"
 
 using namespace std;
 using namespace Eigen;
 
-
 int main() {
+    initParallel();
+    srand(time(NULL));
+    omp_set_num_threads(8);
     clock_t time_start = clock();
-    cout << "input parameters and caculate intermediate variables:";
+    auto begin = std::chrono::steady_clock::now();
+    cout << "input parameters and caculate intermediate variables:" << endl;
     /*
      *   parameters
      */
     vector<double> Omega = {-1.0, 1.0, -1.0, 1.0};
     vector<double> h = {1.0/32, 1.0/32};
-//    vector<double> h = {1.0/8, 1.0/8};
+//    vector<double> h = {1.0/16, 1.0/16};
 //    vector<double> h = {0.25, 0.25};
 
     double gamma = 0.01;
@@ -42,7 +47,7 @@ int main() {
 
     double t_min = 0;
     double t_max = 4;
-    double dt = 0.01;
+    double dt = 0.001;
 
     double left = Omega[0];
     double right = Omega[1];
@@ -71,9 +76,9 @@ int main() {
     /*
      *  generate info matrix and boundary nodes
      */
-    clock_t time_variables = clock();
-    cout << ((time_variables - time_start) / CLOCKS_PER_SEC) << endl;
-    cout << "generate info matrix and boundary nodes:";
+//    clock_t time_variables = clock();
+//    cout << ((time_variables - time_start) / CLOCKS_PER_SEC) << endl;
+//    cout << "generate info matrix and boundary nodes:";
     
     vector< vector<double> > M_partition = generate_P_triangle(Omega, h, "linear");
     vector< vector<int> > T_partition = generate_T_triangle(Omega, h, "linear");
@@ -91,15 +96,41 @@ int main() {
     vector<vector<int>> boundary_nodes_u = generate_boundary_nodes(Omega, h, basis_type_u);
     vector<vector<int>> boundary_nodes_p= generate_boundary_nodes(Omega, h, basis_type_p);
 
-    clock_t time_generate = clock();
-    cout << ((time_generate - time_variables) / CLOCKS_PER_SEC) << endl;
-    cout << "initial values:";
-    
     int num_of_elements = 2 * Nx_partition * Ny_partition;
     int num_of_FE_nodes_phi = (Nx_basis_phi + 1) * (Ny_basis_phi + 1);
     int num_of_FE_nodes_omega = (Nx_basis_omega + 1) * (Ny_basis_omega + 1);
     int num_of_FE_nodes_u = (Nx_basis_u + 1) * (Ny_basis_u + 1);
     int num_of_FE_nodes_p = (Nx_basis_p + 1) * (Ny_basis_p + 1);
+
+    /*
+     *  read mesh from file
+     */
+
+//    vector<vector<double>> M_partition = read_P_from_file("../mesh/mesh_P.dat");
+//    vector<vector<int>> T_partition = read_T_from_file("../mesh/mesh_T.dat");
+//    vector<vector<double>> M_basis_phi = M_partition;
+//    vector<vector<int>> T_basis_phi = T_partition;
+//    vector<vector<double>> M_basis_omega = M_partition;
+//    vector<vector<int>> T_basis_omega = T_partition;
+//    vector<vector<double>> M_basis_u = read_P_from_file("../mesh/FE_P.dat");
+//    vector<vector<int>> T_basis_u = read_T_from_file("../mesh/FE_T.dat");
+//    vector<vector<double>> M_basis_p = M_partition;
+//    vector<vector<int>> T_basis_p = T_partition;
+//
+//    vector<vector<int>> boundary_nodes_phi = read_boundary_nodes_from_file("../mesh/mesh_boundary_nodes.dat");
+//    vector<vector<int>> boundary_nodes_omega = boundary_nodes_phi;
+//    vector<vector<int>> boundary_nodes_u = read_boundary_nodes_from_file("../mesh/FE_boundary_nodes.dat");
+//    vector<vector<int>> boundary_nodes_p = boundary_nodes_phi;
+//
+//    int num_of_elements = T_partition.size();
+//    int num_of_FE_nodes_phi = M_basis_phi.size();
+//    int num_of_FE_nodes_omega = M_basis_omega.size();
+//    int num_of_FE_nodes_u = M_basis_u.size();
+//    int num_of_FE_nodes_p = M_basis_p.size();
+
+    cout << "initial values:" << endl;
+    
+
 
     int num_of_local_basis_phi = 3;
     int num_of_local_basis_omega = 3;
@@ -190,7 +221,11 @@ int main() {
 
     // iterate every time step
 //    Nt = 2;
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - begin);
+    std::cout << "before time step: " << elapsed.count() << " milliseconds" << std::endl;
     for (int i = 1; i <= Nt; i++) {
+        auto time_begin = std::chrono::steady_clock::now();
         ostringstream stime;
         stime <<  (i*dt);
         string str_time = stime.str();
@@ -239,6 +274,7 @@ int main() {
 
         temp_A << (MatrixXd)(A1 + dt * A2 + dt * A3), (MatrixXd)(dt * gamma * A4 + dt * gamma * A5), (MatrixXd)(-1/(eta*eta) * (B1 - B2) - B3 - B4), (MatrixXd)(B5);
         SparseMatrix<double> left_side_A = temp_A.sparseView();
+        left_side_A.makeCompressed();
         cout << "assemble matrix A done." << endl;
 
 //        string file_A_phi = "../data/A_phi/A_phi" + str_time + ".csv";
@@ -373,6 +409,7 @@ int main() {
 //                   (MatrixXd)(rho_0 * D4), (MatrixXd)(rho_0/dt * D1 + rho_0 * D2 + rho_0 * D3 + rho_0 * D5 + mu_0 * D6 + mu_0 * D7), (MatrixXd)(D8),
 //                   (MatrixXd)(-1 * G2), (MatrixXd)(-1 * G3), (MatrixXd)(G1);
         SparseMatrix<double> left_side_A2 = temp_A2.sparseView();
+        left_side_A2.makeCompressed();
         VectorXd b21(num_of_FE_nodes_u), b22(num_of_FE_nodes_u), b23(num_of_FE_nodes_p);
         b21 = lambda * e1 + lambda * e2 + rho_0 * e3 + rho_0 * e4 + rho_0 / dt * e5;
         b22 = lambda * o1 + lambda * o2 + rho_0 * o3 + rho_0 * o4 + rho_0 / dt * o5;
@@ -416,7 +453,11 @@ int main() {
         cout << "solver compute left side." << endl;
         solver2.compute(left_side_A2);
         cout << "solver solve with right side" << endl;
+        auto solve_begin = std::chrono::steady_clock::now();
         VectorXd X2 = solver2.solve(right_side_b2);
+        auto solve_now = std::chrono::steady_clock::now();
+        auto solve_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(solve_now - solve_begin);
+        std::cout << "time solve: " << solve_elapsed.count() << " milliseconds" << std::endl;
 
         cout << "get the result of u1,u2,p." << endl;
         for (int k = 0; k < num_of_FE_nodes_u; k++) {
@@ -455,6 +496,9 @@ int main() {
                 result2dat(u2[i], file_u2, M_basis_u, T_basis_u);
             }
         }
+        auto time_now = std::chrono::steady_clock::now();
+        auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - time_begin);
+        std::cout << "one time step cost: " << time_elapsed.count() << " milliseconds" << std::endl;
         cout << "---------------------------" << endl;
     }
 

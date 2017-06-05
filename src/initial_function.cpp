@@ -10,13 +10,12 @@
 
 double initial_function_phi(double x, double y) {
     double result;
-    if (x >= -0.5 && x <= 0.5 && y >= -0.5 && y <= 0.5) {
-        result = 1;
-    } else {
-        result = -1;
-    }
-//    srand(time(NULL));
-//    result = -0.05 + ((float)rand() / (float)RAND_MAX) * 0.1;
+//    if (x >= -0.5 && x <= 0.5 && y >= -0.5 && y <= 0.5) {
+//        result = 1;
+//    } else {
+//        result = -1;
+//    }
+    result = -0.05 + ((float)rand() / (float)RAND_MAX) * 0.1;
     return result;
 }
 
