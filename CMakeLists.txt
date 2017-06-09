@@ -5,20 +5,25 @@ project(code)
 set(CMAKE_CXX_COMPILER "/usr/local/bin/g++-6")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fopenmp")
 
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake") # Add the directory where FindSuiteSparse.cmake module can be found.
-
-set(SuiteSparse_USE_LAPACK_BLAS ON)
-find_package(SuiteSparse QUIET NO_MODULE)  # 1st: Try to locate the *config.cmake file.
-if(NOT SuiteSparse_FOUND)
-    set(SuiteSparse_VERBOSE ON)
-    find_package(SuiteSparse REQUIRED) # 2nd: Use FindSuiteSparse.cmake module
-    include_directories(${SuiteSparse_INCLUDE_DIRS})
-else()
-    message(STATUS "Find SuiteSparse : include(${USE_SuiteSparse})")
-    include(${USE_SuiteSparse})
-endif()
-MESSAGE(STATUS "SuiteSparse_LIBS: ${SuiteSparse_LIBRARIES}")
-
+################################
+# find suitesparse
+################################
+#LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake") # Add the directory where FindSuiteSparse.cmake module can be found.
+#
+#set(SuiteSparse_USE_LAPACK_BLAS ON)
+#find_package(SuiteSparse QUIET NO_MODULE)  # 1st: Try to locate the *config.cmake file.
+#if(NOT SuiteSparse_FOUND)
+#    set(SuiteSparse_VERBOSE ON)
+#    find_package(SuiteSparse REQUIRED) # 2nd: Use FindSuiteSparse.cmake module
+#    include_directories(${SuiteSparse_INCLUDE_DIRS})
+#else()
+#    message(STATUS "Find SuiteSparse : include(${USE_SuiteSparse})")
+#    include(${USE_SuiteSparse})
+#endif()
+#MESSAGE(STATUS "SuiteSparse_LIBS: ${SuiteSparse_LIBRARIES}")
+################################
+# find openmp
+################################
 #find_package(OpenMP)
 #if(OPENMP_FOUND)
 #    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -38,7 +43,9 @@ set(SOURCE_FILES src/generate_info_matrix.cpp
         src/treat_boundary.cpp
         src/boundary_function.cpp
         src/write_file.cpp
-        src/read_mesh_from_file.cpp)
+        src/read_mesh_from_file.cpp
+        src/fix_pressure.cpp)
+
 
 add_library(fem ${SOURCE_FILES})
 
@@ -61,3 +68,7 @@ add_executable(test_openmp test/test_openmp.cpp)
 
 add_executable(test_speed test/test_speed.cpp)
 target_link_libraries(test_speed fem)
+
+add_executable(test_triplet test/test_triplet.cpp)
+
+add_executable(test_parallel_vector test/test_parallel_vector.cpp)

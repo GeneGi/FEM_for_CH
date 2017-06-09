@@ -15,14 +15,15 @@
 #include "boundary_function.h"
 #include "write_file.h"
 #include "read_mesh_from_file.h"
+#include "fix_pressure.h"
 
 using namespace std;
 using namespace Eigen;
 
 int main() {
-    initParallel();
+//    initParallel();
     srand(time(NULL));
-    omp_set_num_threads(8);
+//    omp_set_num_threads(8);
     clock_t time_start = clock();
     auto begin = std::chrono::steady_clock::now();
     cout << "input parameters and caculate intermediate variables:" << endl;
@@ -30,9 +31,10 @@ int main() {
      *   parameters
      */
     vector<double> Omega = {-1.0, 1.0, -1.0, 1.0};
-    vector<double> h = {1.0/32, 1.0/32};
+//     vector<double> h = {1.0/64, 1.0/64};
+//    vector<double> h = {1.0/32, 1.0/32};
 //    vector<double> h = {1.0/16, 1.0/16};
-//    vector<double> h = {0.25, 0.25};
+    vector<double> h = {1.0/8, 1.0/8};
 
     double gamma = 0.01;
     double eta = 0.02;
@@ -47,7 +49,7 @@ int main() {
 
     double t_min = 0;
     double t_max = 4;
-    double dt = 0.001;
+    double dt = 0.0001;
 
     double left = Omega[0];
     double right = Omega[1];
@@ -124,13 +126,12 @@ int main() {
 //
 //    int num_of_elements = T_partition.size();
 //    int num_of_FE_nodes_phi = M_basis_phi.size();
+
 //    int num_of_FE_nodes_omega = M_basis_omega.size();
 //    int num_of_FE_nodes_u = M_basis_u.size();
 //    int num_of_FE_nodes_p = M_basis_p.size();
 
     cout << "initial values:" << endl;
-    
-
 
     int num_of_local_basis_phi = 3;
     int num_of_local_basis_omega = 3;
@@ -279,12 +280,18 @@ int main() {
 
 //        string file_A_phi = "../data/A_phi/A_phi" + str_time + ".csv";
 //        sparse2csv(left_side_A, file_A_phi);
+        string file_A_phi = "../data/A_phi/A_phi" + str_time + ".mat";
+        sparse2mat(left_side_A, file_A_phi);
 
         right_side_b << b1, b2;
+        string file_b_phi = "../data/b_phi/b_phi" + str_time + ".mat";
 //        string file_b_phi = "../data/b_phi/b_phi" + str_time + ".csv";
-//        vectro2csv(right_side_b, file_b_phi);
+        vectro2csv(right_side_b, file_b_phi);
 
         cout << "load vector b done." << endl;
+
+
+
 //        BiCGSTAB<SparseMatrix<double>> solver;
 //        LeastSquaresConjugateGradient <SparseMatrix<double>> solver;
         ConjugateGradient <SparseMatrix<double>, Upper> solver;
@@ -424,12 +431,18 @@ int main() {
         right_side_b2 << b21, b22, b23;
         cout << "load vector b done." << endl;
 
+        string file_A_u = "../data/A_up/A_u" + str_time + ".mat";
+        string file_b_u = "../data/b_up/b_u" + str_time + ".mat";
+        sparse2mat(left_side_A2, file_A_u);
+        vectro2csv(right_side_b2, file_b_u);
+
         // write into file
 //        string file_A_up = (string)("../data/A_up/A_up") + str_time +  (string)(".csv");
 //        cout << file_A_up << endl;
 //        sparse2csv(left_side_A2, file_A_up);
 
         // treat boundary condition
+//        auto boundary_begin = std::chrono::steady_clock::now();
 //        cout << "treat boundary: left side" << endl;
 //        left_side_A2 = treat_boundary_A_three_matrix(boundary_nodes_u, num_of_FE_nodes_u, boundary_nodes_u, num_of_FE_nodes_u, boundary_nodes_p, left_side_A2);
 //        cout << "treat boundary: right side" << endl;
@@ -437,8 +450,11 @@ int main() {
 //                               boundary_function_u1, boundary_nodes_u, M_basis_u, num_of_FE_nodes_u,
 //                               boundary_function_u2, boundary_nodes_u, M_basis_u, num_of_FE_nodes_u,
 //                               boundary_function_p, boundary_nodes_p, M_basis_p);
+//        auto boundary_now = std::chrono::steady_clock::now();
+//        auto boundary_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(boundary_now - boundary_begin);
+//        std::cout << "treat boundary: " << boundary_elapsed.count() << " milliseconds" << std::endl;
 
-
+        // write boundary matrix into file
 //        string file_A_boundary = (string)("../data/A_up_boundary/A_up_boundary") + str_time +  (string)(".csv");
 //        cout << file_A_boundary<< endl;
 //        sparse2csv(left_side_A2, file_A_boundary);
@@ -446,6 +462,13 @@ int main() {
 //        string file_b_up_boundary = (string)("../data/b_up_boundary/b_up_boundary") + str_time +  (string)(".csv");
 //        cout << file_b_up_boundary << endl;
 //        vectro2csv(right_side_b2, file_b_up_boundary);
+
+
+        // fix pressure
+//        cout << "fix pressure A:" << endl;
+//        left_side_A2 = fix_pressure_A(left_side_A2, num_of_FE_nodes_u * 2, 0);
+//        cout << "fix pressure b" << endl;
+//        right_side_b2 = fix_pressure_b(boundary_function_p, right_side_b2, num_of_FE_nodes_u*2, 0, Omega, M_basis_p);
 
         // solve the equation
         LeastSquaresConjugateGradient <SparseMatrix<double>> solver2;
@@ -482,7 +505,7 @@ int main() {
             string file_u2 = (string)("../data/u2/u2_") + str_time +  (string)(".dat");
             result2dat(u2[i], file_u2, M_basis_u, T_basis_u);
         } else {
-            if (i % 10 == 0) {
+            if (i % 2 == 0) {
                 string file_phi_dat = (string)("../data/phi/phi") + str_time +  (string)(".dat");
                 result2dat(phi[i], file_phi_dat, M_basis_phi, T_basis_phi);
 

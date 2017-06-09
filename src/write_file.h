@@ -13,6 +13,7 @@ using namespace Eigen;
 using namespace std;
 
 void sparse2csv(SparseMatrix<double> matrix, string file_name);
+void sparse2mat(SparseMatrix<double> matrix, string file_name);
 void vectro2csv(VectorXd b, string file_name);
 void result2dat(VectorXd result, string file_name, vector<vector<double>> Pb, vector<vector<int>> Tb);
 

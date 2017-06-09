@@ -26,36 +26,40 @@ SparseMatrix<double> treat_boundary_A_three_matrix(
                                       SparseMatrix<double> A) {
     long nbn_1 = boundary_nodes_1.size();
     for (int i = 0; i < nbn_1; i++) {
-        if (boundary_nodes_1[i][0] == -1) {
+//        if (boundary_nodes_1[i][0] == -1) {
             int k = boundary_nodes_1[i][1];
             for (int j = 0; j< A.cols(); j++) {
                 A.coeffRef(k, j) = 0;
             }
             A.coeffRef(k, k) = 1;
-        }
+//        }
     }
 
     long nbn_2 = boundary_nodes_2.size();
     for (int i = 0; i < nbn_2; i++) {
-        if (boundary_nodes_2[i][0] == -1) {
+//        if (boundary_nodes_2[i][0] == -1) {
             int k = boundary_nodes_2[i][1];
             for (int j = 0; j< A.cols(); j++) {
                 A.coeffRef(k+num_of_FE_nodes_1, j) = 0;
             }
             A.coeffRef(k+num_of_FE_nodes_1, k+num_of_FE_nodes_1) = 1;
-        }
+//        }
     }
 
-    long nbn_3 = boundary_nodes_3.size();
-    for (int i = 0; i < nbn_3; i++) {
-        if (boundary_nodes_3[i][0] == -1) {
-            int k = boundary_nodes_3[i][1];
-            for (int j = 0; j< A.cols(); j++) {
-                A.coeffRef(k+num_of_FE_nodes_1+num_of_FE_nodes_2, j) = 0;
-            }
-            A.coeffRef(k+num_of_FE_nodes_1+num_of_FE_nodes_2, k+num_of_FE_nodes_1+num_of_FE_nodes_2) = 1;
-        }
+    for (int i = 0; i < A.cols(); i++) {
+        A.coeffRef(num_of_FE_nodes_1 + num_of_FE_nodes_2, i) = 0;
     }
+    A.coeffRef(num_of_FE_nodes_1 + num_of_FE_nodes_2, num_of_FE_nodes_1 + num_of_FE_nodes_2) = 1;
+//    long nbn_3 = boundary_nodes_3.size();
+//    for (int i = 0; i < nbn_3; i++) {
+//        if (boundary_nodes_3[i][0] == -1) {
+//            int k = boundary_nodes_3[i][1];
+//            for (int j = 0; j< A.cols(); j++) {
+//                A.coeffRef(k+num_of_FE_nodes_1+num_of_FE_nodes_2, j) = 0;
+//            }
+//            A.coeffRef(k+num_of_FE_nodes_1+num_of_FE_nodes_2, k+num_of_FE_nodes_1+num_of_FE_nodes_2) = 1;
+//        }
+//    }
     return A;
 }
 
@@ -79,27 +83,27 @@ VectorXd treat_boundary_b_three(vector<double> omega,  VectorXd b,
     long nbn_1 = boundary_nodes1.size();
 
     for (int i = 0; i < nbn_1; i++) {
-        if (boundary_nodes1[i][0] == -1) {
+//        if (boundary_nodes1[i][0] == -1) {
             int k = boundary_nodes1[i][1];
             b[k] = boundary_func1(omega, Pb_1[k][0], Pb_1[k][1]);
-        }
+//        }
     }
 
     long nbn_2 = boundary_nodes2.size();
     for (int i = 0; i < nbn_2; i++) {
-        if (boundary_nodes2[i][0] == -1) {
+//        if (boundary_nodes2[i][0] == -1) {
             int k = boundary_nodes1[i][1];
             b[k+num_of_FE_nodes_1] = boundary_func2(omega, Pb_2[k][0], Pb_2[k][1]);
-        }
+//        }
     }
 
-    long nbn_3 = boundary_nodes3.size();
-    for (int i = 0; i < nbn_3; i++) {
-        if (boundary_nodes3[i][0] == -1) {
-            int k = boundary_nodes3[i][1];
-            b[k+num_of_FE_nodes_1+num_of_FE_nodes_2] = boundary_func3(omega, Pb_3[k][0], Pb_3[k][1]);
-        }
-    }
+    b[num_of_FE_nodes_1 + num_of_FE_nodes_2] = boundary_func3(omega, Pb_3[0][0], Pb_3[0][1]);
+//    for (int i = 0; i < nbn_3; i++) {
+//        if (boundary_nodes3[i][0] == -1) {
+//            int k = boundary_nodes3[i][1];
+//            b[k+num_of_FE_nodes_1+num_of_FE_nodes_2] = boundary_func3(omega, Pb_3[k][0], Pb_3[k][1]);
+//        }
+//    }
     return b;
 }
 

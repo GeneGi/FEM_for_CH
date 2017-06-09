@@ -33,10 +33,8 @@ double gauss2d_integral_trial_test(vector<vector<double> > vertices,
     for (int i = 0; i < Ng; i++) {
         double x = x1 * (1 - gauss_nodes[i][0] - gauss_nodes[i][1]) + x2 * gauss_nodes[i][0] + x3 * gauss_nodes[i][1];
         double y = y1 * (1 - gauss_nodes[i][0] - gauss_nodes[i][1]) + y2 * gauss_nodes[i][0] + y3 * gauss_nodes[i][1];
-//        cout << x << " " << y << endl;
         double trial = basis_function(x, y, vertices, basis_type_trial, basis_index_trial, trial_derivative_degree_x, trial_derivative_degree_y);
         double test = basis_function(x, y, vertices, basis_type_test, basis_index_test, test_derivative_degree_x, test_derivative_degree_y);
-//        cout << trial << " " << test << endl;
         quad = quad + gauss_weight[i] * trial * test;
     }
     quad = area * quad;

@@ -118,7 +118,6 @@ double triangular_reference_basis(double x, double y, string basis_type, int bas
                 result = -4;
             }
         }
-    } else {
     }
     return  result;
 }

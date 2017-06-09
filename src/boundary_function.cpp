@@ -70,13 +70,13 @@ double boundary_function_p(vector<double> omega, double x, double y) {
     double result = 0;
 
     if (x == left) {
-        result = 0;
+        result = 1;
     } else if (x == right) {
-        result = 0;
+        result = 1;
     } else if (y == bottom) {
-        result = 0;
+        result = 1;
     } else if (y == top) {
-        result = 0;
+        result = 1;
     }
     return result;
 }

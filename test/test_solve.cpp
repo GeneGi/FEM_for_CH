@@ -14,7 +14,6 @@ using namespace Eigen;
 
 int main()
 {
-    auto begin = std::chrono::steady_clock::now();
     clock_t time_start = clock();
     SparseMatrix<double> A(162, 162);
     ifstream file_A("../data/A001.txt");
@@ -35,6 +34,8 @@ int main()
         b[k] = value;
         k++;
     }
+
+    auto begin = std::chrono::steady_clock::now();
     for (int i = 0; i < 100; i++) {
         ConjugateGradient<SparseMatrix<double>, Lower|Upper> solver;
 //    LeastSquaresConjugateGradient<SparseMatrix<double>> solver;
