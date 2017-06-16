@@ -12,7 +12,7 @@ VectorXd load_vector_b(vector<vector<double>> P, vector<vector<double>> Pb, vect
         right_side[i] = 0;
     }
     vector<vector<double>> vertices(3, vector<double>(2));
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int i = 0; i < N; i++) {
         for (int k = 0; k < 3; k++) {
             vertices[k][0] = P[T[i][k]][0];
@@ -20,7 +20,7 @@ VectorXd load_vector_b(vector<vector<double>> P, vector<vector<double>> Pb, vect
         }
         for (int beta = 0; beta < Nlb; beta++) {
             double temp = gauss2d_integral_test(vertices, beta, basis_type, derivative_degree_x, derivative_degree_y);
-#pragma omp critical
+//#pragma omp critical
             right_side(Tb[i][beta]) += temp;
         }
     }
@@ -63,7 +63,7 @@ VectorXd load_vector_FE_b(VectorXd un,  string un_basis_type, int un_derivative_
     }
     vector<vector<double>> vertices(3, vector<double>(2));
     VectorXd un_local(Nlb);
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int i = 0; i < N; i++) {
         for (int k = 0; k < 3; k++) {
             vertices[k][0] = P[T[i][k]][0];
@@ -75,7 +75,7 @@ VectorXd load_vector_FE_b(VectorXd un,  string un_basis_type, int un_derivative_
         for (int beta = 0; beta < Nlb_test; beta++) {
             double temp = gauss2d_integral_FE_test(un_local, un_basis_type, un_derivative_degree_x, un_derivative_degree_y,
                                                    vertices,  basis_type, beta, derivative_degree_x, derivative_degree_y);
-#pragma omp critical
+//#pragma omp critical
             right_side(Tb[i][beta]) += temp;
         }
     }
@@ -106,7 +106,7 @@ VectorXd load_vector_2FE_b(VectorXd un1,  string un1_basis_type, int un1_derivat
     vector<vector<double>> vertices(3, vector<double>(2));
     VectorXd un1_local(Nlb_1), un2_local(Nlb_2);
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int i = 0; i < N; i++) {
         for (int k = 0; k < 3; k++) {
             vertices[k][0] = P[T[i][k]][0];
@@ -122,7 +122,7 @@ VectorXd load_vector_2FE_b(VectorXd un1,  string un1_basis_type, int un1_derivat
             double temp = gauss2d_integral_2FE_test(un1_local, un1_basis_type, un1_derivative_degree_x, un1_derivative_degree_y,
                                                    un2_local, un2_basis_type, un2_derivative_degree_x, un2_derivative_degree_y,
                                                    vertices,  basis_type, beta, derivative_degree_x, derivative_degree_y);
-#pragma omp critical
+//#pragma omp critical
             right_side(Tb[i][beta]) += temp;
         }
     }

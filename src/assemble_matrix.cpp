@@ -18,12 +18,13 @@ SparseMatrix<double> assemble_matrix_A(  vector<vector<double>> P, vector<vector
                                          string trial_basis_type, int trial_derivative_degree_x, int trial_derivative_degree_y,
                                          string test_basis_type, int test_derivative_degree_x, int test_derivative_degree_y) {
 //    MatrixXd StiffnessMatrix(Nb_test, Nb_trial);
-    SparseMatrix<double> StiffnessMatrix(Nb_test, Nb_trial);
     vector<vector<double>> vertices(3, vector<double>(2));
-    vector<Triplet<double>> coefficients;
     auto begin = std::chrono::steady_clock::now();
+//    vector< Triplet<double> > coefficients;
 //    clock_t time_start = clock();
-//#pragma omp parallel for
+    SparseMatrix<double> StiffnessMatrix(Nb_test, Nb_trial);
+//    omp_set_num_threads(16);
+//#pragma omp parallel for num_threads(32)
     for (int i = 0; i < N; i++) {
         for (int k = 0; k < 3; k++) {
             vertices[k][0] = P[T[i][k]][0];
@@ -33,18 +34,17 @@ SparseMatrix<double> assemble_matrix_A(  vector<vector<double>> P, vector<vector
             for (int beta = 0; beta < Nlb_test; beta++) {
                 double temp = gauss2d_integral_trial_test(vertices, trial_basis_type, test_basis_type, alpha, beta,
                                                             trial_derivative_degree_x, trial_derivative_degree_y, test_derivative_degree_x, test_derivative_degree_y);
-//                StiffnessMatrix.coeffRef(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
+                StiffnessMatrix.coeffRef(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
 //                StiffnessMatrix(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
-//#pragma omp critical
-                coefficients.push_back(Triplet<double>(Tb_test[i][beta], Tb_trial[i][alpha], temp));
+//                coefficients.push_back(Triplet<double>(Tb_test[i][beta], Tb_test[i][alpha], temp));
             }
         }
     }
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - begin);
-    std::cout << "assemble matrix time:" << elapsed .count() << " milliseconds" << std::endl;
-    StiffnessMatrix.setFromTriplets(coefficients.begin(), coefficients.end());
+    std::cout << "Cost of method is " << elapsed .count() << " milliseconds" << std::endl;
 //    SparseMatrix<double> result = StiffnessMatrix.sparseView();
+//    StiffnessMatrix.setFromTriplets(coefficients.begin(), coefficients.end());
 //    clock_t time_end = clock();
 //    cout << "assemble time: " << (double)((time_end - time_start)/(CLOCKS_PER_SEC)) << "s" << endl;
     return StiffnessMatrix;
@@ -81,9 +81,8 @@ SparseMatrix<double> assemble_matrix_A_FE(VectorXd un,  string un_basis_type, in
                                           int N, int Nb_trial, int Nb_test, int Nlb_trial, int Nlb_test,
                                           string trial_basis_type, int trial_derivative_degree_x, int trial_derivative_degree_y,
                                           string test_basis_type,int test_derivative_degree_x, int test_derivative_degree_y) {
-    SparseMatrix<double> StiffnessMatrix(Nb_test, Nb_trial);
-//    MatrixXd StiffnessMatrix(Nb_test, Nb_trial);
-    vector<Triplet<double>> coefficients;
+//    SparseMatrix<double> StiffnessMatrix(Nb_test, Nb_trial);
+    MatrixXd StiffnessMatrix(Nb_test, Nb_trial);
     int Nlb = 0;
     if (un_basis_type == "linear") {
         Nlb = 3;
@@ -108,19 +107,15 @@ SparseMatrix<double> assemble_matrix_A_FE(VectorXd un,  string un_basis_type, in
                                                              trial_basis_type, alpha, trial_derivative_degree_x, trial_derivative_degree_y,
                                                              test_basis_type, beta, test_derivative_degree_x, test_derivative_degree_y);
 //                StiffnessMatrix.coeffRef(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
-//                StiffnessMatrix(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
-//#pragma omp critical
-                coefficients.push_back(Triplet<double>(Tb_test[i][beta], Tb_trial[i][alpha], temp));
+                StiffnessMatrix(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
             }
         }
     }
-//    SparseMatrix<double> result = StiffnessMatrix.sparseView();
+    SparseMatrix<double> result = StiffnessMatrix.sparseView();
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - begin);
-    std::cout << "assemble matrix time: " << elapsed .count() << " milliseconds" << std::endl;
-//    StiffnessMatrix.setFromTriplets(coefficients.begin(), coefficients.end());
-//    return result;
-    return StiffnessMatrix;
+    std::cout << "Cost of method is " << elapsed .count() << " milliseconds" << std::endl;
+    return result;
 }
 
 SparseMatrix<double> assemble_matrix_A_2FE(VectorXd un_1,  string un1_basis_type, int un1_derivative_degree_x, int un1_derivative_degree_y,
@@ -130,9 +125,8 @@ SparseMatrix<double> assemble_matrix_A_2FE(VectorXd un_1,  string un1_basis_type
                                           int N, int Nb_trial, int Nb_test, int Nlb_trial, int Nlb_test,
                                           string trial_basis_type, int trial_derivative_degree_x, int trial_derivative_degree_y,
                                           string test_basis_type,int test_derivative_degree_x, int test_derivative_degree_y) {
-    SparseMatrix<double> StiffnessMatrix(Nb_test, Nb_trial);
-//    MatrixXd StiffnessMatrix(Nb_test, Nb_trial);
-    vector<Triplet<double>> coefficients;
+//    SparseMatrix<double> StiffnessMatrix(Nb_test, Nb_trial);
+    MatrixXd StiffnessMatrix(Nb_test, Nb_trial);
     int Nlb_1 = 0;
     int Nlb_2 = 0;
     if (un1_basis_type == "linear") {
@@ -167,18 +161,13 @@ SparseMatrix<double> assemble_matrix_A_2FE(VectorXd un_1,  string un1_basis_type
                                                              trial_basis_type, alpha, trial_derivative_degree_x, trial_derivative_degree_y,
                                                              test_basis_type, beta, test_derivative_degree_x, test_derivative_degree_y);
 //                StiffnessMatrix.coeffRef(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
-//                StiffnessMatrix(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
-//#pragma omp critical
-                coefficients.push_back(Triplet<double>(Tb_test[i][beta], Tb_trial[i][alpha], temp));
+                StiffnessMatrix(Tb_test[i][beta], Tb_trial[i][alpha]) += temp;
             }
-
         }
     }
-//    SparseMatrix<double> result = StiffnessMatrix.sparseView();
+    SparseMatrix<double> result = StiffnessMatrix.sparseView();
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - begin);
-    std::cout << "assemble matrix time:" << elapsed .count() << " milliseconds" << std::endl;
-    StiffnessMatrix.setFromTriplets(coefficients.begin(), coefficients.end());
-//    return result;
-    return StiffnessMatrix;
+    std::cout << "Cost of method is " << elapsed .count() << " milliseconds" << std::endl;
+    return result;
 }

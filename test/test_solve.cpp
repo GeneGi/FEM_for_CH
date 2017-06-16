@@ -36,10 +36,10 @@ int main()
     }
 
     auto begin = std::chrono::steady_clock::now();
-    for (int i = 0; i < 100; i++) {
-        ConjugateGradient<SparseMatrix<double>, Lower|Upper> solver;
+//    for (int i = 0; i < 100; i++) {
+        ConjugateGradient<SparseMatrix<double>, Upper> solver;
 //    LeastSquaresConjugateGradient<SparseMatrix<double>> solver;
-//    BiCGSTAB<SparseMatrix<double>> solver;  +inf
+//    BiCGSTAB<SparseMatrix<double>> solver;
 //    SimplicialLLT<SparseMatrix<double>>  solver; 0
 //    SparseLU<SparseMatrix<double>> solver; random
 //    SPQR<SparseMatrix<double>> solver;
@@ -48,15 +48,15 @@ int main()
 //    CholmodSupernodalLLT<SparseMatrix<double>> solver;
         solver.compute(A);
         VectorXd X = solver.solve(b);
-    }
+//    }
     clock_t time_end = clock();
     cout << "solve time: " << (double)((time_end - time_start)/(CLOCKS_PER_SEC)) << "s" << endl;
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - begin);
     std::cout << "Cost of method0() is " << elapsed .count() << " milliseconds" << std::endl;
-//    for (int m = 0; m < 162; m++) {
-//        cout << X[m] << endl;
-//    }
+    for (int m = 0; m < 162; m++) {
+        cout << X[m] << endl;
+    }
 //    vectro2csv(X, "result_X.csv");
     return 0;
 }

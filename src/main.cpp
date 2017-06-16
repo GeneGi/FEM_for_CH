@@ -31,10 +31,10 @@ int main() {
      *   parameters
      */
     vector<double> Omega = {-1.0, 1.0, -1.0, 1.0};
-//     vector<double> h = {1.0/64, 1.0/64};
+     vector<double> h = {1.0/64, 1.0/64};
 //    vector<double> h = {1.0/32, 1.0/32};
 //    vector<double> h = {1.0/16, 1.0/16};
-    vector<double> h = {1.0/8, 1.0/8};
+//    vector<double> h = {1.0/8, 1.0/8};
 
     double gamma = 0.01;
     double eta = 0.02;
@@ -81,7 +81,7 @@ int main() {
 //    clock_t time_variables = clock();
 //    cout << ((time_variables - time_start) / CLOCKS_PER_SEC) << endl;
 //    cout << "generate info matrix and boundary nodes:";
-    
+
     vector< vector<double> > M_partition = generate_P_triangle(Omega, h, "linear");
     vector< vector<int> > T_partition = generate_T_triangle(Omega, h, "linear");
     vector< vector<double> > M_basis_phi = M_partition;
@@ -156,8 +156,8 @@ int main() {
         u1[0][i] = initial_function_u1(M_basis_u[i][0], M_basis_u[i][1]);
         u2[0][i] = initial_function_u2(M_basis_u[i][0], M_basis_u[i][1]);
     }
-    
-    
+
+
     // caculate time independent matrix
     cout << "assemble A1." << endl;
     SparseMatrix<double> A1 = assemble_matrix_A(M_partition, T_partition, T_partition, T_partition,
@@ -280,13 +280,13 @@ int main() {
 
 //        string file_A_phi = "../data/A_phi/A_phi" + str_time + ".csv";
 //        sparse2csv(left_side_A, file_A_phi);
-        string file_A_phi = "../data/A_phi/A_phi" + str_time + ".mat";
-        sparse2mat(left_side_A, file_A_phi);
+//        string file_A_phi = "../data/A_phi/A_phi" + str_time + ".mat";
+//        sparse2mat(left_side_A, file_A_phi);
 
         right_side_b << b1, b2;
-        string file_b_phi = "../data/b_phi/b_phi" + str_time + ".mat";
+//        string file_b_phi = "../data/b_phi/b_phi" + str_time + ".mat";
 //        string file_b_phi = "../data/b_phi/b_phi" + str_time + ".csv";
-        vectro2csv(right_side_b, file_b_phi);
+//        vectro2csv(right_side_b, file_b_phi);
 
         cout << "load vector b done." << endl;
 

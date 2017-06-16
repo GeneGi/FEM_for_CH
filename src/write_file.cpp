@@ -33,16 +33,16 @@ void sparse2mat(SparseMatrix<double> sparseMatrix, string file_name) {
     for (int i = 0; i < matrix.rows(); i++) {
         for (int j = 0; j < matrix.cols(); j++) {
             if (j == matrix.cols()-1) {
-                if (matrix(i)(j) == 0) {
+                if (matrix(i, j) == 0) {
                     file << 0;
                 } else {
-                    file <<  matrix(i)(j);
+                    file <<  matrix(i, j);
                 }
             } else {
-                if (matrix(i)(j) == 0) {
+                if (matrix(i, j) == 0) {
                     file << 0 << " ";
                 } else {
-                    file <<  matrix(i)(j) << " ";
+                    file <<  matrix(i, j) << " ";
                 }
             }
         }
