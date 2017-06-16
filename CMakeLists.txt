@@ -44,7 +44,8 @@ set(SOURCE_FILES src/generate_info_matrix.cpp
         src/boundary_function.cpp
         src/write_file.cpp
         src/read_mesh_from_file.cpp
-        src/fix_pressure.cpp)
+        src/fix_pressure.cpp
+        src/sparse2triplet.cpp)
 
 
 add_library(fem ${SOURCE_FILES})
@@ -70,5 +71,6 @@ add_executable(test_speed test/test_speed.cpp)
 target_link_libraries(test_speed fem)
 
 add_executable(test_triplet test/test_triplet.cpp)
+target_link_libraries(test_triplet fem)
 
 add_executable(test_parallel_vector test/test_parallel_vector.cpp)

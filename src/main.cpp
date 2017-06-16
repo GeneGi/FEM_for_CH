@@ -16,6 +16,7 @@
 #include "write_file.h"
 #include "read_mesh_from_file.h"
 #include "fix_pressure.h"
+#include "sparse2triplet.h"
 
 using namespace std;
 using namespace Eigen;
@@ -31,10 +32,10 @@ int main() {
      *   parameters
      */
     vector<double> Omega = {-1.0, 1.0, -1.0, 1.0};
-     vector<double> h = {1.0/64, 1.0/64};
+//     vector<double> h = {1.0/64, 1.0/64};
 //    vector<double> h = {1.0/32, 1.0/32};
 //    vector<double> h = {1.0/16, 1.0/16};
-//    vector<double> h = {1.0/8, 1.0/8};
+    vector<double> h = {1.0/8, 1.0/8};
 
     double gamma = 0.01;
     double eta = 0.02;
@@ -48,7 +49,7 @@ int main() {
     string basis_type_p = "linear";
 
     double t_min = 0;
-    double t_max = 4;
+    double t_max = 0.1;
     double dt = 0.0001;
 
     double left = Omega[0];
@@ -261,8 +262,21 @@ int main() {
         for (int k = 0; k < num_of_FE_nodes_omega; k++) {
             b2[k] = 0;
         }
-
-        MatrixXd temp_A(num_of_FE_nodes_phi+num_of_FE_nodes_omega, num_of_FE_nodes_phi+num_of_FE_nodes_omega);
+        vector< Triplet<double> > coefficients_all;
+        SparseMatrix<double> left_side_A11 = A1 + dt * A2 + dt * A3;
+        vector< Triplet<double> > coefficeints11 = sparse2triplet(left_side_A11, 0, 0);
+        coefficients_all.insert(coefficients_all.end(), coefficeints11.begin(), coefficeints11.end());
+        SparseMatrix<double> left_side_A12 = dt * gamma * A4 + dt * gamma * A5;
+        vector< Triplet<double> > coefficeints12 = sparse2triplet(left_side_A12, 0, left_side_A11.cols());
+        coefficients_all.insert(coefficients_all.end(), coefficeints12.begin(), coefficeints12.end());
+        SparseMatrix<double> left_side_A21 = -1/(eta*eta)*(B1 - B2) - B3 - B4;
+        vector< Triplet<double> > coefficeints21 = sparse2triplet(left_side_A21, left_side_A11.rows(), 0);
+        coefficients_all.insert(coefficients_all.end(), coefficeints21.begin(), coefficeints21.end());
+        SparseMatrix<double> left_side_A22 = B5;
+        vector< Triplet<double> > coefficeints22 = sparse2triplet(left_side_A22, left_side_A11.rows(), left_side_A11.cols());
+        coefficients_all.insert(coefficients_all.end(), coefficeints22.begin(), coefficeints22.end());
+        SparseMatrix<double> left_side_A(num_of_FE_nodes_phi+num_of_FE_nodes_omega, num_of_FE_nodes_phi+num_of_FE_nodes_omega);
+        left_side_A.setFromTriplets(coefficients_all.begin(), coefficients_all.end());
         VectorXd right_side_b(num_of_FE_nodes_omega + num_of_FE_nodes_phi);
 //        cout << A1 + dt * A2 + dt * A3 << endl;
 //        cout << "-------------------------------" << endl;
@@ -273,9 +287,6 @@ int main() {
 //        cout << B5 << endl;
 //        cout << "-------------------------------" << endl;
 
-        temp_A << (MatrixXd)(A1 + dt * A2 + dt * A3), (MatrixXd)(dt * gamma * A4 + dt * gamma * A5), (MatrixXd)(-1/(eta*eta) * (B1 - B2) - B3 - B4), (MatrixXd)(B5);
-        SparseMatrix<double> left_side_A = temp_A.sparseView();
-        left_side_A.makeCompressed();
         cout << "assemble matrix A done." << endl;
 
 //        string file_A_phi = "../data/A_phi/A_phi" + str_time + ".csv";
@@ -296,7 +307,11 @@ int main() {
 //        LeastSquaresConjugateGradient <SparseMatrix<double>> solver;
         ConjugateGradient <SparseMatrix<double>, Upper> solver;
         solver.compute(left_side_A);
+        auto solve_begin = std::chrono::steady_clock::now();
         VectorXd X = solver.solve(right_side_b);
+        auto solve_now = std::chrono::steady_clock::now();
+        auto solve_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(solve_now - solve_begin);
+        std::cout << "time solve: " << solve_elapsed.count() << " milliseconds" << std::endl;
 
         for (int k = 0; k < num_of_FE_nodes_phi; k++) {
             phi[i][k] = X[k];
@@ -384,18 +399,37 @@ int main() {
                                        num_of_elements, num_of_FE_nodes_u, num_of_local_basis_u, basis_type_u, 0, 0);
 
 
-        MatrixXd temp_A2(num_of_FE_nodes_u*2 + num_of_FE_nodes_p, num_of_FE_nodes_u*2 + num_of_FE_nodes_p);
+        SparseMatrix<double> left_side_A2(num_of_FE_nodes_u*2 + num_of_FE_nodes_p, num_of_FE_nodes_u*2 + num_of_FE_nodes_p);
         VectorXd right_side_b2(num_of_FE_nodes_u*2 + num_of_FE_nodes_p);
 
+        vector<Triplet<double>> coefficients2_all;
         SparseMatrix<double> A11 = rho_0 / dt * C1 + rho_0 * C2 + rho_0 * C3 + rho_0 * C5 + mu_0 * C6 + mu_0 * C7;
+        vector< Triplet<double> > coefficeints2_11 = sparse2triplet(A11, 0, 0);
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_11.begin(), coefficeints2_11.end());
         SparseMatrix<double> A12 = rho_0 * C4;
+        vector< Triplet<double> > coefficeints2_12 = sparse2triplet(A12, 0, A11.cols());
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_12.begin(), coefficeints2_12.end());
         SparseMatrix<double> A13 = C8;
+        vector< Triplet<double> > coefficeints2_13 = sparse2triplet(A13, 0, A11.cols()+A12.cols());
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_13.begin(), coefficeints2_13.end());
         SparseMatrix<double> A21 = rho_0 * D4;
+        vector< Triplet<double> > coefficeints2_21 = sparse2triplet(A21, A11.rows(), 0);
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_21.begin(), coefficeints2_21.end());
         SparseMatrix<double> A22 = rho_0/dt * D1 + rho_0 * D2 + rho_0 * D3 + rho_0 * D5 + mu_0 * D6 + mu_0 * D7;
+        vector< Triplet<double> > coefficeints2_22 = sparse2triplet(A22, A12.rows(), A21.cols());
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_22.begin(), coefficeints2_22.end());
         SparseMatrix<double> A23 = D8;
+        vector< Triplet<double> > coefficeints2_23 = sparse2triplet(A23, A13.rows(), A21.cols() + A22.cols());
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_23.begin(), coefficeints2_23.end());
         SparseMatrix<double> A31 = -1 * G2;
+        vector< Triplet<double> > coefficeints2_31 = sparse2triplet(A31, A11.rows() + A21.rows(), 0);
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_31.begin(), coefficeints2_31.end());
         SparseMatrix<double> A32 = -1 * G3;
+        vector< Triplet<double> > coefficeints2_32 = sparse2triplet(A32, A12.rows() + A22.rows(), A31.cols());
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_32.begin(), coefficeints2_32.end());
         SparseMatrix<double> A33 = G1;
+        vector< Triplet<double> > coefficeints2_33 = sparse2triplet(A33, A13.rows() + A23.rows(), A31.cols() + A32.cols());
+        coefficients2_all.insert(coefficients2_all.end(), coefficeints2_33.begin(), coefficeints2_33.end());
 //        sparse2csv(A11, "A11.csv");
 //        cout << A11.rows() << " " << A11.cols() << endl;
 //        cout << A12.rows() << " " << A12.cols() << endl;
@@ -408,15 +442,12 @@ int main() {
 //        cout << A33.rows() << " " << A33.cols() << endl;
 //        cout << temp_A2.rows() << " " << temp_A2.cols() << endl;
 
-        temp_A2 << (MatrixXd)(A11), (MatrixXd)(A12), (MatrixXd)(A13),
-                (MatrixXd)(A21), (MatrixXd)(A22), (MatrixXd)(A23),
-                (MatrixXd)(A31), (MatrixXd)(A32), (MatrixXd)(A33);
         cout << "assemble matrix A done." << endl;
 //        temp_A2 << (MatrixXd)(rho_0 / dt * C1 + rho_0 * C2 + rho_0 * C3 + rho_0 * C5 + mu_0 * C6 + mu_0 * C7), (MatrixXd)(rho_0 * C4), (MatrixXd)(C8),
 //                   (MatrixXd)(rho_0 * D4), (MatrixXd)(rho_0/dt * D1 + rho_0 * D2 + rho_0 * D3 + rho_0 * D5 + mu_0 * D6 + mu_0 * D7), (MatrixXd)(D8),
 //                   (MatrixXd)(-1 * G2), (MatrixXd)(-1 * G3), (MatrixXd)(G1);
-        SparseMatrix<double> left_side_A2 = temp_A2.sparseView();
-        left_side_A2.makeCompressed();
+        left_side_A2.setFromTriplets(coefficients2_all.begin(), coefficients2_all.end());
+
         VectorXd b21(num_of_FE_nodes_u), b22(num_of_FE_nodes_u), b23(num_of_FE_nodes_p);
         b21 = lambda * e1 + lambda * e2 + rho_0 * e3 + rho_0 * e4 + rho_0 / dt * e5;
         b22 = lambda * o1 + lambda * o2 + rho_0 * o3 + rho_0 * o4 + rho_0 / dt * o5;
@@ -476,11 +507,11 @@ int main() {
         cout << "solver compute left side." << endl;
         solver2.compute(left_side_A2);
         cout << "solver solve with right side" << endl;
-        auto solve_begin = std::chrono::steady_clock::now();
+        auto solve_begin1 = std::chrono::steady_clock::now();
         VectorXd X2 = solver2.solve(right_side_b2);
-        auto solve_now = std::chrono::steady_clock::now();
-        auto solve_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(solve_now - solve_begin);
-        std::cout << "time solve: " << solve_elapsed.count() << " milliseconds" << std::endl;
+        auto solve_now1 = std::chrono::steady_clock::now();
+        auto solve_elapsed1 = std::chrono::duration_cast<std::chrono::milliseconds>(solve_now1 - solve_begin1);
+        std::cout << "time solve: " << solve_elapsed1.count() << " milliseconds" << std::endl;
 
         cout << "get the result of u1,u2,p." << endl;
         for (int k = 0; k < num_of_FE_nodes_u; k++) {
